@@ -53,10 +53,8 @@ fn part2(input: &str) -> Result<u64> {
                     s = &s[b + 7..];
                     continue;
                 }
+                (Some(a), _) => a,
                 _ => break,
-            };
-            let Some(idx) = s.find("mul(") else {
-                break;
             };
             let fst = idx + 4;
             s = &s[fst..];
@@ -95,10 +93,13 @@ fn part2(input: &str) -> Result<u64> {
 }
 
 #[allow(dead_code)]
-static EX_INPUT: &str = "EXAMPLE 1 HERE";
+static EX_INPUT_1: &str = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
+#[allow(dead_code)]
+static EX_INPUT_2: &str =
+    "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
 
 aoc! {
     INPUT:
-    part1 => (EX_INPUT) 0,
-    part2 => (EX_INPUT) 0
+    part1 => (EX_INPUT_1) 161,
+    part2 => (EX_INPUT_2) 48
 }
