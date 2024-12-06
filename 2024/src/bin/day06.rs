@@ -8,25 +8,19 @@ use aoc_lib::{
 
 static INPUT: &str = include_str!("../../inputs/day06");
 
-fn part1(input: &str) -> Result<usize> {
-    let input = input.trim();
-    let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
+fn get_visited_cells(grid: &Grid<'_>, starting_pos: Point) -> HashSet<Point> {
+    let mut direction = (0, -1);
+    let mut pos = starting_pos;
 
     let mut visited = HashSet::new();
 
-    let mut direction = (0, -1);
-    let mut pos = input
-        .find('^')
-        .and_then(|idx| grid.idx_to_pos(idx))
-        .ok_or_eyre("invalid input")?;
-
-    'outer: loop {
+    loop {
         visited.insert(pos);
 
         loop {
             let next_pos = pos.add(&direction);
             if !grid.is_valid_pos(next_pos) {
-                break 'outer;
+                return visited;
             }
             if grid[next_pos] == b'#' {
                 direction = (direction.1 * -1, direction.0);
@@ -36,8 +30,18 @@ fn part1(input: &str) -> Result<usize> {
             }
         }
     }
+}
 
-    Ok(visited.len())
+fn part1(input: &str) -> Result<usize> {
+    let input = input.trim();
+    let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
+
+    let pos = input
+        .find('^')
+        .and_then(|idx| grid.idx_to_pos(idx))
+        .ok_or_eyre("invalid input")?;
+
+    Ok(get_visited_cells(&grid, pos).len())
 }
 
 fn loops_for_input(
@@ -48,11 +52,15 @@ fn loops_for_input(
     let mut visited = HashSet::new();
 
     let mut direction = (0, -1);
+    let mut last_direction = direction;
     let mut pos = starting_pos;
 
     loop {
-        if !visited.insert((pos, direction)) {
-            return true;
+        if last_direction != direction {
+            if !visited.insert((pos, direction)) {
+                return true;
+            }
+            last_direction = direction;
         }
 
         loop {
@@ -78,13 +86,13 @@ fn part2(input: &str) -> Result<usize> {
         .and_then(|idx| grid.idx_to_pos(idx))
         .ok_or_eyre("invalid input")?;
 
-    Ok(input
-        .as_bytes()
-        .iter()
-        .enumerate()
-        .filter(|&(_, &c)| c != b'#' && c != b'^')
-        .filter(|&(idx, _)| {
-            let check_point = |pos| grid[pos] != b'#' && grid.pos_to_idx(pos).unwrap() != idx;
+    let mut visited = get_visited_cells(&grid, starting_pos);
+    visited.remove(&starting_pos);
+
+    Ok(visited
+        .into_iter()
+        .filter(|&replaced_pos| {
+            let check_point = |pos| grid[pos] != b'#' && pos != replaced_pos;
             loops_for_input(&grid, starting_pos, check_point)
         })
         .count())
