@@ -1,27 +1,6 @@
-use std::ops::{Deref, DerefMut};
-
 use aoc_lib::{aoc, color_eyre::eyre::Result};
 
 static INPUT: &str = include_str!("../../inputs/day09");
-
-struct Arr1 {
-    len: u8,
-    inner: [Option<u16>; 10],
-}
-
-impl Deref for Arr1 {
-    type Target = [Option<u16>];
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner[..self.len as usize]
-    }
-}
-
-impl DerefMut for Arr1 {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner[..self.len as usize]
-    }
-}
 
 #[derive(Clone, Copy)]
 enum Cell {
@@ -29,13 +8,13 @@ enum Cell {
     Taken { val: u16, len: u8 },
 }
 
-struct Arr2 {
+struct Arr {
     capacity: u8,
     len: u8,
     inner: [Cell; 10],
 }
 
-impl Arr2 {
+impl Arr {
     fn try_insert(&mut self, val: u16, len: u8) -> bool {
         if self.len + len > self.capacity {
             false
@@ -59,49 +38,29 @@ fn part1(input: &str) -> Result<usize> {
         .as_bytes()
         .iter()
         .enumerate()
-        .map(|(id, num)| {
+        .flat_map(|(id, num)| {
             let id = id as u16;
             let len = num - b'0';
-            let mut res = Arr1 {
-                len,
-                inner: [None; 10],
-            };
-            if id & 1 != 1 {
-                for i in 0..res.len as usize {
-                    res.inner[i] = Some(id / 2);
-                }
-            }
-            res
+            std::iter::repeat_n(if id & 1 == 1 { None } else { Some(id / 2) }, len as usize)
         })
         .collect();
 
     for i in (0..input.len()).rev() {
-        for j in (0..input[i].len()).rev() {
-            let &Some(elem) = &input[i][j] else {
-                continue;
-            };
-            let Some(empty_place) = (&mut input[..i])
-                .iter_mut()
-                .find_map(|arr| arr.iter_mut().find(|x| x.is_none()))
-            else {
-                break;
-            };
-            *empty_place = Some(elem);
-            input[i][j] = None;
-        }
+        let Some(elem) = input[i] else {
+            continue;
+        };
+        let Some(empty_place) = (&mut input[..i]).iter_mut().find(|x| x.is_none()) else {
+            break;
+        };
+        *empty_place = Some(elem);
+        input[i] = None;
     }
 
     Ok(input
         .iter()
-        .scan(0, |state, curr| {
-            let res: usize = curr
-                .iter()
-                .enumerate()
-                .filter_map(|(i, e)| e.map(|val| (*state + i) * val as usize))
-                .sum();
-            *state += curr.len();
-            Some(res)
-        })
+        .flatten()
+        .enumerate()
+        .map(|(i, &e)| e as usize * i)
         .sum())
 }
 
@@ -115,7 +74,7 @@ fn part2(input: &str) -> Result<usize> {
         .map(|(id, num)| {
             let id = id as u16;
             let len = num - b'0';
-            let mut res = Arr2 {
+            let mut res = Arr {
                 capacity: len,
                 len: 0,
                 inner: [const { Cell::Empty }; 10],
