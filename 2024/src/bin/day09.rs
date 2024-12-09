@@ -31,37 +31,48 @@ impl Arr {
     }
 }
 
-fn part1(input: &str) -> Result<usize> {
-    let input = input.trim();
+fn part1(input_str: &str) -> Result<usize> {
+    let input_str = input_str.trim();
+    let mut input = input_str.as_bytes().to_vec();
 
-    let mut input: Vec<_> = input
-        .as_bytes()
-        .iter()
-        .enumerate()
-        .flat_map(|(id, num)| {
-            let id = id as u16;
-            let len = num - b'0';
-            std::iter::repeat_n(if id & 1 == 1 { None } else { Some(id / 2) }, len as usize)
-        })
-        .collect();
+    let mut res = 0;
 
-    for i in (0..input.len()).rev() {
-        let Some(elem) = input[i] else {
-            continue;
-        };
-        let Some(empty_place) = (&mut input[..i]).iter_mut().find(|x| x.is_none()) else {
-            break;
-        };
-        *empty_place = Some(elem);
-        input[i] = None;
+    let mut idx = (input[0] - b'0') as usize;
+    let mut left = 1;
+    let mut right = input.len() - if input.len() & 1 == 1 { 1 } else { 2 };
+
+    while left < right {
+        let a = input[left] - b'0';
+        let b = input[right] - b'0';
+
+        if a > b {
+            input[left] -= b;
+            let id = right / 2;
+            let len = b as usize;
+            // len (idx + (idx + len - 1)) / 2
+            // len (2idx + len - 1) / 2
+            // len * 2idx + len^2 - len / 2
+            res += len * (2 * idx + len - 1) / 2 * id;
+            idx += len;
+            right -= 2;
+        } else {
+            input[right] -= a;
+            let id = right / 2;
+            let len = a as usize;
+            res += len * (2 * idx + len - 1) / 2 * id;
+            idx += len;
+
+            let i = left + 1;
+            let id = i / 2;
+            let len = (input[i] - b'0') as usize;
+            res += len * (2 * idx + len - 1) / 2 * id;
+            idx += len;
+
+            left += 2;
+        }
     }
 
-    Ok(input
-        .iter()
-        .flatten()
-        .enumerate()
-        .map(|(i, &e)| e as usize * i)
-        .sum())
+    Ok(res)
 }
 
 fn part2(input: &str) -> Result<usize> {
