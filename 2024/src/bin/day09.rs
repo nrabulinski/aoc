@@ -31,44 +31,43 @@ impl Arr {
     }
 }
 
-fn part1(input_str: &str) -> Result<usize> {
-    let input_str = input_str.trim();
-    let mut input = input_str.as_bytes().to_vec();
+fn part1(input: &str) -> Result<usize> {
+    let input = input.trim().as_bytes();
 
     let mut res = 0;
-
     let mut idx = (input[0] - b'0') as usize;
-    let mut left = 1;
-    let mut right = input.len() - if input.len() & 1 == 1 { 1 } else { 2 };
+    let mut add_to_res = |id, len| {
+        let len = len as usize;
+        res += len * (2 * idx + len - 1) / 2 * id;
+        idx += len;
+    };
 
-    while left < right {
-        let a = input[left] - b'0';
-        let b = input[right] - b'0';
+    let mut left_idx = 1;
+    let mut right_idx = input.len() - if input.len() & 1 == 1 { 1 } else { 2 };
+    let mut left = input[left_idx] - b'0';
+    let mut right = input[right_idx] - b'0';
 
-        if a > b {
-            input[left] -= b;
-            let id = right / 2;
-            let len = b as usize;
-            // len (idx + (idx + len - 1)) / 2
-            // len (2idx + len - 1) / 2
-            // len * 2idx + len^2 - len / 2
-            res += len * (2 * idx + len - 1) / 2 * id;
-            idx += len;
-            right -= 2;
+    while left_idx < right_idx {
+        if left > right {
+            left -= right;
+            add_to_res(right_idx / 2, right);
+            right_idx -= 2;
+            right = input[right_idx] - b'0';
         } else {
-            input[right] -= a;
-            let id = right / 2;
-            let len = a as usize;
-            res += len * (2 * idx + len - 1) / 2 * id;
-            idx += len;
+            right -= left;
+            add_to_res(right_idx / 2, left);
+            let i = left_idx + 1;
+            add_to_res(
+                i / 2,
+                if i == right_idx {
+                    right
+                } else {
+                    input[i] - b'0'
+                },
+            );
 
-            let i = left + 1;
-            let id = i / 2;
-            let len = (input[i] - b'0') as usize;
-            res += len * (2 * idx + len - 1) / 2 * id;
-            idx += len;
-
-            left += 2;
+            left_idx += 2;
+            left = input[left_idx] - b'0';
         }
     }
 
