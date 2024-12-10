@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use aoc_lib::{
-    algo::dijkstra,
     aoc,
     color_eyre::eyre::{OptionExt, Result},
     grid::{Grid, Point},
@@ -13,12 +12,23 @@ fn part1(input: &str) -> Result<usize> {
     let input = input.trim();
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
-    let end_points: Vec<_> = input
-        .as_bytes()
-        .iter()
-        .enumerate()
-        .filter_map(|(i, &c)| (c == b'9').then(|| grid.idx_to_pos(i).unwrap()))
-        .collect();
+    fn dfs(grid: &Grid<'_>, pos: Point, visited: &mut HashSet<Point>) -> usize {
+        visited.insert(pos);
+        if grid[pos] == b'9' {
+            return 1;
+        }
+        let val = grid[pos];
+        grid.orthogonal_pos(pos)
+            .filter_map(|next_pos| {
+                let next_val = grid[next_pos];
+                if next_val > val && next_val - val == 1 && !visited.contains(&next_pos) {
+                    Some(dfs(grid, next_pos, visited))
+                } else {
+                    None
+                }
+            })
+            .sum()
+    }
 
     Ok(input
         .as_bytes()
@@ -26,16 +36,9 @@ fn part1(input: &str) -> Result<usize> {
         .enumerate()
         .filter(|&(_, &c)| c == b'0')
         .map(|(pos, _)| {
-            let (dist, _) = dijkstra(grid.idx_to_pos(pos).unwrap(), |&pos| {
-                let val = grid[pos];
-                grid.orthogonal_pos(pos)
-                    .filter(move |&next_pos| {
-                        let next_val = grid[next_pos];
-                        next_val > val && next_val - val == 1
-                    })
-                    .map(|x| (x, 1))
-            });
-            end_points.iter().filter_map(|end| dist.get(end)).count()
+            let pos = grid.idx_to_pos(pos).unwrap();
+            let mut visited = HashSet::new();
+            dfs(&grid, pos, &mut visited)
         })
         .sum())
 }
@@ -67,8 +70,7 @@ fn part2(input: &str) -> Result<usize> {
         .filter(|&(_, &c)| c == b'0')
         .map(|(pos, _)| {
             let pos = grid.idx_to_pos(pos).unwrap();
-            let mut visited = HashSet::new();
-            visited.insert(pos);
+            let visited = HashSet::new();
             dfs(&grid, pos, &visited)
         })
         .sum())
