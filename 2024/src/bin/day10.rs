@@ -20,8 +20,7 @@ fn part1(input: &str) -> Result<usize> {
         let val = grid[pos];
         grid.orthogonal_pos(pos)
             .filter_map(|next_pos| {
-                let next_val = grid[next_pos];
-                if next_val > val && next_val - val == 1 && !visited.contains(&next_pos) {
+                if grid[next_pos].wrapping_sub(val) == 1 && !visited.contains(&next_pos) {
                     Some(dfs(grid, next_pos, visited))
                 } else {
                     None
@@ -47,19 +46,14 @@ fn part2(input: &str) -> Result<usize> {
     let input = input.trim();
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
-    fn dfs(grid: &Grid<'_>, pos: Point, visited: &HashSet<Point>) -> usize {
+    fn dfs(grid: &Grid<'_>, pos: Point) -> usize {
         if grid[pos] == b'9' {
             return 1;
         }
-        let mut new_visited = visited.clone();
-        new_visited.insert(pos);
         let val = grid[pos];
         grid.orthogonal_pos(pos)
-            .filter(|next_pos| {
-                let next_val = grid[*next_pos];
-                next_val > val && next_val - val == 1 && !new_visited.contains(next_pos)
-            })
-            .map(|next_pos| dfs(grid, next_pos, &new_visited))
+            .filter(|next_pos| grid[*next_pos].wrapping_sub(val) == 1)
+            .map(|next_pos| dfs(grid, next_pos))
             .sum()
     }
 
@@ -70,8 +64,7 @@ fn part2(input: &str) -> Result<usize> {
         .filter(|&(_, &c)| c == b'0')
         .map(|(pos, _)| {
             let pos = grid.idx_to_pos(pos).unwrap();
-            let visited = HashSet::new();
-            dfs(&grid, pos, &visited)
+            dfs(&grid, pos)
         })
         .sum())
 }
