@@ -23,7 +23,7 @@ fn get_visited_cells(grid: &Grid<'_>, starting_pos: Point) -> HashSet<Point> {
                 return visited;
             }
             if grid[next_pos] == b'#' {
-                direction = (direction.1 * -1, direction.0);
+                direction = (-direction.1, direction.0);
             } else {
                 pos = next_pos;
                 break;
@@ -72,7 +72,7 @@ fn loops_for_input(
                 pos = next_pos;
                 break;
             } else {
-                direction = (direction.1 * -1, direction.0);
+                direction = (-direction.1, direction.0);
             }
         }
     }

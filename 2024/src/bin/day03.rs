@@ -3,7 +3,7 @@ use aoc_lib::{aoc, color_eyre::eyre::Result};
 static INPUT: &str = include_str!("../../inputs/day03");
 
 fn part1(input: &str) -> Result<u64> {
-    let mut s = &input[..];
+    let mut s = input;
     let mut res = 0;
 
     while !s.is_empty() {
@@ -19,7 +19,7 @@ fn part1(input: &str) -> Result<u64> {
             continue;
         }
         let a = &s[..comma];
-        let Ok(a) = u64::from_str_radix(a, 10) else {
+        let Ok(a) = a.parse::<u64>() else {
             continue;
         };
         s = &s[comma + 1..];
@@ -30,7 +30,7 @@ fn part1(input: &str) -> Result<u64> {
             continue;
         }
         let b = &s[..end];
-        let Ok(b) = u64::from_str_radix(b, 10) else {
+        let Ok(b) = b.parse::<u64>() else {
             continue;
         };
         s = &s[end + 1..];
@@ -40,7 +40,7 @@ fn part1(input: &str) -> Result<u64> {
 }
 
 fn part2(input: &str) -> Result<u64> {
-    let mut s = &input[..];
+    let mut s = input;
     let mut enabled = true;
     let mut res = 0;
 
@@ -65,7 +65,7 @@ fn part2(input: &str) -> Result<u64> {
                 continue;
             }
             let a = &s[..comma];
-            let Ok(a) = u64::from_str_radix(a, 10) else {
+            let Ok(a) = a.parse::<u64>() else {
                 continue;
             };
             s = &s[comma + 1..];
@@ -76,7 +76,7 @@ fn part2(input: &str) -> Result<u64> {
                 continue;
             }
             let b = &s[..end];
-            let Ok(b) = u64::from_str_radix(b, 10) else {
+            let Ok(b) = b.parse::<u64>() else {
                 continue;
             };
             s = &s[end + 1..];

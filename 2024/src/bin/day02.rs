@@ -39,7 +39,7 @@ fn check_maybe_report(report: impl Iterator<Item = i64>) -> bool {
 
     for to_remove in 0..vals.len() {
         let (left, right) = vals.split_at(to_remove);
-        let iter = left.iter().copied().chain((&right[1..]).iter().copied());
+        let iter = left.iter().copied().chain(right[1..].iter().copied());
         if check_report(iter) {
             return true;
         }

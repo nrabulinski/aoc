@@ -102,7 +102,7 @@ fn part2(input: &str) -> Result<usize> {
             let &Cell::Taken { val, len } = &input[i].inner[j] else {
                 continue;
             };
-            if !(&mut input[..i])
+            if !input[..i]
                 .iter_mut()
                 .any(|arr| arr.try_insert(val, len))
             {
