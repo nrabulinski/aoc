@@ -6,6 +6,7 @@ static INPUT: &str = include_str!("../../inputs/day11");
 
 fn solve(input: &str, blinks: usize) -> Result<usize> {
     let mut groups = HashMap::new();
+    let mut next_groups = HashMap::new();
 
     fn insert_group(groups: &mut HashMap<usize, usize>, stone: usize, cnt: usize) {
         groups.entry(stone).and_modify(|c| *c += cnt).or_insert(cnt);
@@ -17,7 +18,7 @@ fn solve(input: &str, blinks: usize) -> Result<usize> {
     }
 
     for _ in 0..blinks {
-        let mut next_groups = HashMap::new();
+        next_groups.clear();
         for (&stone, &cnt) in &groups {
             if stone == 0 {
                 insert_group(&mut next_groups, 1, cnt);
