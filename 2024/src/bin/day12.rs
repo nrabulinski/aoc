@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 use aoc_lib::{
     aoc,
@@ -53,55 +50,39 @@ fn part1(input: &str) -> Result<usize> {
 }
 
 fn calc_perim(edges: &[(Point, Point)]) -> usize {
-    let mut above: Vec<_> = edges
-        .iter()
-        .filter_map(|&(d, pos)| (d == (0, -1)).then_some(pos))
-        .collect();
-    above.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
-        Ordering::Equal => a.0.cmp(&b.0),
-        res => res,
-    });
-    let mut below: Vec<_> = edges
-        .iter()
-        .filter_map(|&(d, pos)| (d == (0, 1)).then_some(pos))
-        .collect();
-    below.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
-        Ordering::Equal => a.0.cmp(&b.0),
-        res => res,
-    });
-
-    let horizontal = above
+    // Only find horizontal edges, i.e. those that are above or below a cell
+    let mut hor: Vec<_> = edges.iter().filter(|&(d, _)| matches!(d, (0, _))).collect();
+    // Sort them first by the difference, then by y, then by x.
+    // This means we will get first all the edges that were above, sorted by their y component, and finally by x,
+    // followed by edges that were below.
+    // E.g. for this shape:
+    // XX
+    // X <- this cell is counted twice, it's both above and below an X
+    // XX
+    // Where the horizontal edges are (0, -1), (1, -1), (0, 3), (1, 3), and (1, 1) twice
+    // `hor` would be [(0, -1), (1, -1), (1, 1), (1, 1), (0, 3), (1, 3)]
+    hor.sort_unstable_by_key(|(d, pos)| (d, pos.1, pos.0));
+    // Finally, calculate how many horizontal edges we have.
+    // We do this by counting how many neighboring entries have the same difference (i.e. both are above or below)
+    // and then checking if their y component is different or x component is different by 1.
+    // In other words, a cell is part of the same edge if the previous cell (remember, the cells are sorted)
+    // is on the same y level, and its x is smaller by 1.
+    // And then we add 2 because we don't account for the first edge above and below (we're only counting differences)
+    let hor = hor
         .windows(2)
-        .chain(below.windows(2))
-        .filter(|win| win[0].1 != win[1].1 || win[1].0 - win[0].0 != 1)
+        .filter(|w| w[0].0 == w[1].0 && (w[0].1.1 != w[1].1.1 || w[1].1.0 - w[0].1.0 != 1))
+        .count()
+        + 2;
+    // Now do the same, but for horizontal edges, i.e. we switch up x and y.
+    let mut ver: Vec<_> = edges.iter().filter(|&(d, _)| matches!(d, (_, 0))).collect();
+    ver.sort_unstable_by_key(|(d, pos)| (d, pos.0, pos.1));
+    let ver = ver
+        .windows(2)
+        .filter(|w| w[0].0 == w[1].0 && (w[0].1.0 != w[1].1.0 || w[1].1.1 - w[0].1.1 != 1))
         .count()
         + 2;
 
-    let mut left: Vec<_> = edges
-        .iter()
-        .filter_map(|&(d, pos)| (d == (-1, 0)).then_some(pos))
-        .collect();
-    left.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
-        Ordering::Equal => a.1.cmp(&b.1),
-        res => res,
-    });
-    let mut right: Vec<_> = edges
-        .iter()
-        .filter_map(|&(d, pos)| (d == (1, 0)).then_some(pos))
-        .collect();
-    right.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
-        Ordering::Equal => a.1.cmp(&b.1),
-        res => res,
-    });
-
-    let vertical = left
-        .windows(2)
-        .chain(right.windows(2))
-        .filter(|win| win[0].0 != win[1].0 || win[1].1 - win[0].1 != 1)
-        .count()
-        + 2;
-
-    horizontal + vertical
+    hor + ver
 }
 
 fn part2(input: &str) -> Result<usize> {
