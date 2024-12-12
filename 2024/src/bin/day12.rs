@@ -12,7 +12,8 @@ fn part1(input: &str) -> Result<usize> {
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
     let mut visited = HashSet::new();
-    let mut plots = Vec::new();
+    let mut res = 0;
+    let mut queue = Vec::new();
 
     for y in 0..grid.height() {
         for x in 0..grid.width() {
@@ -23,7 +24,7 @@ fn part1(input: &str) -> Result<usize> {
             let curr = grid[start];
             let mut state = (0, 0);
 
-            let mut queue = Vec::new();
+            queue.clear();
             queue.push(start);
 
             while let Some(pos) = queue.pop() {
@@ -31,23 +32,27 @@ fn part1(input: &str) -> Result<usize> {
                     continue;
                 }
                 state.0 += 1usize;
-                state.1 += 4 - grid
-                    .orthogonal_pos(pos)
-                    .filter(|&cell| grid[cell] == curr)
-                    .count();
-                queue.extend(
-                    grid.orthogonal_pos(pos)
-                        .filter(|cell| grid[*cell] == curr && !visited.contains(cell)),
-                );
+                state.1 += 4;
+                for next_pos in [-1, 1]
+                    .into_iter()
+                    .map(|dy| (0, dy))
+                    .chain([-1, 1].into_iter().map(|dx| (dx, 0)))
+                    .map(|d| pos.add(&d))
+                {
+                    if grid.get_pos(next_pos).is_some_and(|&c| c == curr) {
+                        state.1 -= 1;
+                        if !visited.contains(&next_pos) {
+                            queue.push(next_pos);
+                        }
+                    }
+                }
             }
-            plots.push(state);
+
+            res += state.0 * state.1;
         }
     }
 
-    Ok(plots
-        .into_iter()
-        .map(|(area, perimeter)| area * perimeter)
-        .sum())
+    Ok(res)
 }
 
 fn calc_perim(mut edges: Vec<(Point, Point)>) -> usize {
@@ -72,7 +77,8 @@ fn part2(input: &str) -> Result<usize> {
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
     let mut visited = HashSet::new();
-    let mut plots = Vec::new();
+    let mut res = 0;
+    let mut queue = Vec::new();
 
     for y in 0..grid.height() {
         for x in 0..grid.width() {
@@ -83,7 +89,7 @@ fn part2(input: &str) -> Result<usize> {
             let curr = grid[start];
             let mut state = (0, Vec::new());
 
-            let mut queue = Vec::new();
+            queue.clear();
             queue.push(start);
 
             while let Some(pos) = queue.pop() {
@@ -91,28 +97,26 @@ fn part2(input: &str) -> Result<usize> {
                     continue;
                 }
                 state.0 += 1usize;
-                state.1.extend(
-                    [-1, 1]
-                        .into_iter()
-                        .map(|dy| ((0, dy), (pos.0, pos.1 + dy)))
-                        .chain([-1, 1].into_iter().map(|dx| ((dx, 0), (pos.0 + dx, pos.1))))
-                        .filter(|&(_, cell)| !grid.is_valid_pos(cell) || grid[cell] != curr),
-                );
 
-                queue.extend(
-                    grid.orthogonal_pos(pos)
-                        .filter(|cell| grid[*cell] == curr && !visited.contains(cell)),
-                );
+                for d in [-1, 1]
+                    .into_iter()
+                    .map(|dy| (0, dy))
+                    .chain([-1, 1].into_iter().map(|dx| (dx, 0)))
+                {
+                    let next_pos = pos.add(&d);
+                    if !grid.is_valid_pos(next_pos) || grid[next_pos] != curr {
+                        state.1.push((d, next_pos));
+                    } else if grid[next_pos] == curr && !visited.contains(&next_pos) {
+                        queue.push(next_pos);
+                    }
+                }
             }
 
-            plots.push(state);
+            res += state.0 * calc_perim(state.1);
         }
     }
 
-    Ok(plots
-        .into_iter()
-        .map(|(area, edges)| area * calc_perim(edges))
-        .sum())
+    Ok(res)
 }
 
 #[allow(dead_code)]
