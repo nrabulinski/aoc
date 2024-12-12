@@ -1,9 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use aoc_lib::{
     aoc,
     color_eyre::eyre::{OptionExt, Result},
-    grid::{Grid, Point},
+    grid::{Grid, Point, PointExt},
 };
 
 static INPUT: &str = include_str!("../../inputs/day12");
@@ -12,7 +12,7 @@ fn part1(input: &str) -> Result<usize> {
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
     let mut visited = HashSet::new();
-    let mut plots = HashMap::new();
+    let mut plots = Vec::new();
 
     for y in 0..grid.height() {
         for x in 0..grid.width() {
@@ -21,6 +21,7 @@ fn part1(input: &str) -> Result<usize> {
                 continue;
             }
             let curr = grid[start];
+            let mut state = (0, 0);
 
             let mut queue = Vec::new();
             queue.push(start);
@@ -29,9 +30,8 @@ fn part1(input: &str) -> Result<usize> {
                 if !visited.insert(pos) {
                     continue;
                 }
-                let entry = plots.entry(start).or_insert((0, 0));
-                entry.0 += 1usize;
-                entry.1 += 4 - grid
+                state.0 += 1usize;
+                state.1 += 4 - grid
                     .orthogonal_pos(pos)
                     .filter(|&cell| grid[cell] == curr)
                     .count();
@@ -40,56 +40,39 @@ fn part1(input: &str) -> Result<usize> {
                         .filter(|cell| grid[*cell] == curr && !visited.contains(cell)),
                 );
             }
+            plots.push(state);
         }
     }
 
     Ok(plots
-        .into_values()
+        .into_iter()
         .map(|(area, perimeter)| area * perimeter)
         .sum())
 }
 
-fn calc_perim(edges: &[(Point, Point)]) -> usize {
-    // Only find horizontal edges, i.e. those that are above or below a cell
-    let mut hor: Vec<_> = edges.iter().filter(|&(d, _)| matches!(d, (0, _))).collect();
-    // Sort them first by the difference, then by y, then by x.
-    // This means we will get first all the edges that were above, sorted by their y component, and finally by x,
-    // followed by edges that were below.
-    // E.g. for this shape:
-    // XX
-    // X <- this cell is counted twice, it's both above and below an X
-    // XX
-    // Where the horizontal edges are (0, -1), (1, -1), (0, 3), (1, 3), and (1, 1) twice
-    // `hor` would be [(0, -1), (1, -1), (1, 1), (1, 1), (0, 3), (1, 3)]
-    hor.sort_unstable_by_key(|(d, pos)| (d, pos.1, pos.0));
-    // Finally, calculate how many horizontal edges we have.
-    // We do this by counting how many neighboring entries have the same difference (i.e. both are above or below)
-    // and then checking if their y component is different or x component is different by 1.
-    // In other words, a cell is part of the same edge if the previous cell (remember, the cells are sorted)
-    // is on the same y level, and its x is smaller by 1.
-    // And then we add 2 because we don't account for the first edge above and below (we're only counting differences)
-    let hor = hor
+fn calc_perim(mut edges: Vec<(Point, Point)>) -> usize {
+    // Order edges by the type first (is it above a cell, below, left of it, or right of it),
+    // then, if it's a horizontal edge (above or below), by y component first, then x,
+    // and if it's a vertical edge, by x component first, then y.
+    edges.sort_unstable_by_key(|&(d, pos)| (d, if d.0 == 0 { (pos.1, pos.0) } else { pos }));
+    edges
         .windows(2)
-        .filter(|w| w[0].0 == w[1].0 && (w[0].1.1 != w[1].1.1 || w[1].1.0 - w[0].1.0 != 1))
+        .filter(|w| {
+            if w[0].0 != w[1].0 {
+                return false;
+            }
+            let d = (w[0].0.1, w[0].0.0).map(i64::abs);
+            w[0].1.add(&d) != w[1].1
+        })
         .count()
-        + 2;
-    // Now do the same, but for horizontal edges, i.e. we switch up x and y.
-    let mut ver: Vec<_> = edges.iter().filter(|&(d, _)| matches!(d, (_, 0))).collect();
-    ver.sort_unstable_by_key(|(d, pos)| (d, pos.0, pos.1));
-    let ver = ver
-        .windows(2)
-        .filter(|w| w[0].0 == w[1].0 && (w[0].1.0 != w[1].1.0 || w[1].1.1 - w[0].1.1 != 1))
-        .count()
-        + 2;
-
-    hor + ver
+        + 4
 }
 
 fn part2(input: &str) -> Result<usize> {
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
     let mut visited = HashSet::new();
-    let mut plots = HashMap::new();
+    let mut plots = Vec::new();
 
     for y in 0..grid.height() {
         for x in 0..grid.width() {
@@ -98,6 +81,7 @@ fn part2(input: &str) -> Result<usize> {
                 continue;
             }
             let curr = grid[start];
+            let mut state = (0, Vec::new());
 
             let mut queue = Vec::new();
             queue.push(start);
@@ -106,9 +90,8 @@ fn part2(input: &str) -> Result<usize> {
                 if !visited.insert(pos) {
                     continue;
                 }
-                let entry = plots.entry(start).or_insert((0, Vec::new()));
-                entry.0 += 1usize;
-                entry.1.extend(
+                state.0 += 1usize;
+                state.1.extend(
                     [-1, 1]
                         .into_iter()
                         .map(|dy| ((0, dy), (pos.0, pos.1 + dy)))
@@ -121,12 +104,14 @@ fn part2(input: &str) -> Result<usize> {
                         .filter(|cell| grid[*cell] == curr && !visited.contains(cell)),
                 );
             }
+
+            plots.push(state);
         }
     }
 
     Ok(plots
-        .into_values()
-        .map(|(area, edges)| area * calc_perim(&edges))
+        .into_iter()
+        .map(|(area, edges)| area * calc_perim(edges))
         .sum())
 }
 
