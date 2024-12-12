@@ -6,7 +6,7 @@ use std::{
 use aoc_lib::{
     aoc,
     color_eyre::eyre::{OptionExt, Result},
-    grid::Grid,
+    grid::{Grid, Point},
 };
 
 static INPUT: &str = include_str!("../../inputs/day12");
@@ -52,6 +52,58 @@ fn part1(input: &str) -> Result<usize> {
         .sum())
 }
 
+fn calc_perim(edges: &[(Point, Point)]) -> usize {
+    let mut above: Vec<_> = edges
+        .iter()
+        .filter_map(|&(d, pos)| (d == (0, -1)).then_some(pos))
+        .collect();
+    above.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
+        Ordering::Equal => a.0.cmp(&b.0),
+        res => res,
+    });
+    let mut below: Vec<_> = edges
+        .iter()
+        .filter_map(|&(d, pos)| (d == (0, 1)).then_some(pos))
+        .collect();
+    below.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
+        Ordering::Equal => a.0.cmp(&b.0),
+        res => res,
+    });
+
+    let horizontal = above
+        .windows(2)
+        .chain(below.windows(2))
+        .filter(|win| win[0].1 != win[1].1 || win[1].0 - win[0].0 != 1)
+        .count()
+        + 2;
+
+    let mut left: Vec<_> = edges
+        .iter()
+        .filter_map(|&(d, pos)| (d == (-1, 0)).then_some(pos))
+        .collect();
+    left.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
+        Ordering::Equal => a.1.cmp(&b.1),
+        res => res,
+    });
+    let mut right: Vec<_> = edges
+        .iter()
+        .filter_map(|&(d, pos)| (d == (1, 0)).then_some(pos))
+        .collect();
+    right.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
+        Ordering::Equal => a.1.cmp(&b.1),
+        res => res,
+    });
+
+    let vertical = left
+        .windows(2)
+        .chain(right.windows(2))
+        .filter(|win| win[0].0 != win[1].0 || win[1].1 - win[0].1 != 1)
+        .count()
+        + 2;
+
+    horizontal + vertical
+}
+
 fn part2(input: &str) -> Result<usize> {
     let grid = Grid::for_str(input).ok_or_eyre("invalid format")?;
 
@@ -73,31 +125,15 @@ fn part2(input: &str) -> Result<usize> {
                 if !visited.insert(pos) {
                     continue;
                 }
-                let entry = plots.entry(start).or_insert((
-                    0,
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                ));
+                let entry = plots.entry(start).or_insert((0, Vec::new()));
                 entry.0 += 1usize;
-
-                let above = (pos.0, pos.1 - 1);
-                if !grid.is_valid_pos(above) || grid[above] != curr {
-                    entry.1.push(above);
-                }
-                let below = (pos.0, pos.1 + 1);
-                if !grid.is_valid_pos(below) || grid[below] != curr {
-                    entry.2.push(below);
-                }
-                let left = (pos.0 - 1, pos.1);
-                if !grid.is_valid_pos(left) || grid[left] != curr {
-                    entry.3.push(left);
-                }
-                let right = (pos.0 + 1, pos.1);
-                if !grid.is_valid_pos(right) || grid[right] != curr {
-                    entry.4.push(right);
-                }
+                entry.1.extend(
+                    [-1, 1]
+                        .into_iter()
+                        .map(|dy| ((0, dy), (pos.0, pos.1 + dy)))
+                        .chain([-1, 1].into_iter().map(|dx| ((dx, 0), (pos.0 + dx, pos.1))))
+                        .filter(|&(_, cell)| !grid.is_valid_pos(cell) || grid[cell] != curr),
+                );
 
                 queue.extend(
                     grid.orthogonal_pos(pos)
@@ -109,46 +145,7 @@ fn part2(input: &str) -> Result<usize> {
 
     Ok(plots
         .into_values()
-        .map(|(area, mut a, mut b, mut l, mut r)| {
-            a.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
-                Ordering::Equal => a.0.cmp(&b.0),
-                res => res,
-            });
-            b.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
-                Ordering::Equal => a.0.cmp(&b.0),
-                res => res,
-            });
-            l.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
-                Ordering::Equal => a.1.cmp(&b.1),
-                res => res,
-            });
-            r.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
-                Ordering::Equal => a.1.cmp(&b.1),
-                res => res,
-            });
-            let a = a
-                .windows(2)
-                .filter(|win| win[0].1 != win[1].1 || win[1].0 - win[0].0 != 1)
-                .count()
-                + if !a.is_empty() { 1 } else { 0 };
-            let b = b
-                .windows(2)
-                .filter(|win| win[0].1 != win[1].1 || win[1].0 - win[0].0 != 1)
-                .count()
-                + if !b.is_empty() { 1 } else { 0 };
-            let l = l
-                .windows(2)
-                .filter(|win| win[0].0 != win[1].0 || win[1].1 - win[0].1 != 1)
-                .count()
-                + if !l.is_empty() { 1 } else { 0 };
-            let r = r
-                .windows(2)
-                .filter(|win| win[0].0 != win[1].0 || win[1].1 - win[0].1 != 1)
-                .count()
-                + if !r.is_empty() { 1 } else { 0 };
-
-            area * (a + b + l + r)
-        })
+        .map(|(area, edges)| area * calc_perim(&edges))
         .sum())
 }
 
