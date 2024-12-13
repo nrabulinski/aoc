@@ -2,7 +2,7 @@ use aoc_lib::{aoc, color_eyre::eyre::Result, grid::PointExt, to_lines};
 
 static INPUT: &str = include_str!("../../inputs/day13");
 
-fn find_optimal<'s>(mut input: impl Iterator<Item = &'s str>) -> Option<usize> {
+fn find_optimal<'s>(mut input: impl Iterator<Item = &'s str>, prize_offset: i64) -> Option<usize> {
     fn parse_line(s: &str) -> (i64, i64) {
         let (_, s) = s.split_once(": ").unwrap();
         let (x, y) = s.split_once(", ").unwrap();
@@ -10,7 +10,7 @@ fn find_optimal<'s>(mut input: impl Iterator<Item = &'s str>) -> Option<usize> {
     }
     let a = parse_line(input.next().unwrap());
     let b = parse_line(input.next().unwrap());
-    let prize = parse_line(input.next().unwrap()).map(|n| n + 10000000000000);
+    let prize = parse_line(input.next().unwrap()).map(|n| n + prize_offset);
 
     // px = a * ax + b * bx
     // py = a * ay + b * by
@@ -43,55 +43,11 @@ fn find_optimal<'s>(mut input: impl Iterator<Item = &'s str>) -> Option<usize> {
     Some(cost as usize)
 }
 
-fn find_capped<'s>(mut input: impl Iterator<Item = &'s str>) -> Option<usize> {
-    fn parse_line(s: &str) -> (i64, i64) {
-        let (_, s) = s.split_once(": ").unwrap();
-        let (x, y) = s.split_once(", ").unwrap();
-        (x[2..].parse().unwrap(), y[2..].parse().unwrap())
-    }
-
-    let a = parse_line(input.next().unwrap());
-    let b = parse_line(input.next().unwrap());
-    let prize = parse_line(input.next().unwrap());
-
-    let mut i = (0..100).filter_map(|a_presses| {
-        let x = a_presses * a.0;
-        let y = a_presses * a.1;
-
-        let x_remaining = prize.0 - x;
-        let y_remaining = prize.1 - y;
-
-        match (x_remaining % b.0, y_remaining % b.1) {
-            (0, 0) => {
-                let maybe_b_presses = x_remaining / b.0;
-                if y_remaining / b.1 != maybe_b_presses {
-                    None
-                } else {
-                    let cost = 3 * a_presses as usize;
-                    Some(cost + maybe_b_presses as usize)
-                }
-            }
-            _ => None,
-        }
-    });
-
-    let fst = i.next()?;
-    let Some(snd) = i.next() else {
-        return Some(fst);
-    };
-
-    if fst < snd {
-        Some(fst)
-    } else {
-        Some(i.next_back().unwrap_or(snd))
-    }
-}
-
 fn part1(input: &str) -> Result<usize> {
     Ok(input
         .trim()
         .split("\n\n")
-        .filter_map(|lines| find_capped(to_lines(lines)))
+        .filter_map(|lines| find_optimal(to_lines(lines), 0))
         .sum())
 }
 
@@ -99,7 +55,7 @@ fn part2(input: &str) -> Result<usize> {
     Ok(input
         .trim()
         .split("\n\n")
-        .filter_map(|lines| find_optimal(to_lines(lines)))
+        .filter_map(|lines| find_optimal(to_lines(lines), 10000000000000))
         .sum())
 }
 
