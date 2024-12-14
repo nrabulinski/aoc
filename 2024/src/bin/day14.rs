@@ -54,36 +54,19 @@ fn part1(input: &str) -> Result<i64> {
     Ok(a * b * c * d)
 }
 
-fn part2(input: &str) -> Result<usize> {
+fn part2(input: &str) -> Result<i64> {
     let robots: Vec<_> = to_lines(input).map(parse_line).collect();
 
-    for sec in 1.. {
-        let positions: HashSet<_> = robots
-            .iter()
-            .map(|&state| pos_after_steps(state, sec))
-            .collect();
-        if positions.len() != robots.len() {
-            continue;
-        }
+    Ok((1..)
+        .find(|&steps| {
+            let positions: HashSet<_> = robots
+                .iter()
+                .map(|&state| pos_after_steps(state, steps))
+                .collect();
 
-        for y in 0..HEIGHT {
-            for x in 0..WIDTH {
-                eprint!(
-                    "{}",
-                    if positions.contains(&(x, y)) {
-                        '#'
-                    } else {
-                        '.'
-                    }
-                );
-            }
-            eprintln!();
-        }
-
-        eprintln!("{sec} elapsed...");
-    }
-
-    Ok(0)
+            positions.len() == robots.len()
+        })
+        .unwrap())
 }
 
 #[allow(dead_code)]
@@ -105,5 +88,5 @@ p=9,5 v=-3,-3
 aoc! {
     INPUT:
     part1 => (EX_INPUT) 12,
-    part2 => (EX_INPUT) 0
+    part2 => (EX_INPUT) 1
 }
