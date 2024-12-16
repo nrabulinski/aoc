@@ -36,18 +36,20 @@ fn part1(input: &str) -> Result<i64> {
     let (a, b, c, d) = to_lines(input)
         .map(|line| pos_after_steps(parse_line(line), 100))
         .fold((0, 0, 0, 0), |mut acc, pos| {
-            if pos.0 < WIDTH / 2 {
-                if pos.1 < HEIGHT / 2 {
-                    acc.0 += 1;
-                } else if pos.1 > HEIGHT / 2 {
-                    acc.2 += 1;
-                }
-            } else if pos.0 > WIDTH / 2 {
-                if pos.1 < HEIGHT / 2 {
-                    acc.1 += 1;
-                } else if pos.1 > HEIGHT / 2 {
-                    acc.3 += 1;
-                }
+            const HALF_WIDTH: i64 = WIDTH / 2;
+            const HALF_HEIGHT: i64 = HEIGHT / 2;
+            match pos.0 {
+                HALF_WIDTH => (),
+                ..HALF_WIDTH => match pos.1 {
+                    HALF_HEIGHT => (),
+                    ..HALF_HEIGHT => acc.0 += 1,
+                    HALF_HEIGHT.. => acc.2 += 1,
+                },
+                HALF_WIDTH.. => match pos.1 {
+                    HALF_HEIGHT => (),
+                    ..HALF_HEIGHT => acc.1 += 1,
+                    HALF_HEIGHT.. => acc.3 += 1,
+                },
             }
             acc
         });

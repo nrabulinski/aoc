@@ -48,20 +48,18 @@ fn maybe_move_box_wide(
             if grid[(next.0 / 2, next.1)] == b'#' || grid[((next.0 + 1) / 2, next.1)] == b'#' {
                 return false;
             }
-            if boxes.contains(&(next.0 - 1, next.1)) {
-                if !can_move_box_wide(grid, boxes, (next.0 - 1, next.1), dir) {
-                    return false;
-                }
+            if boxes.contains(&(next.0 - 1, next.1))
+                && !can_move_box_wide(grid, boxes, (next.0 - 1, next.1), dir)
+            {
+                return false;
             }
-            if boxes.contains(&pos.add(&dir)) {
-                if !can_move_box_wide(grid, boxes, next, dir) {
-                    return false;
-                }
+            if boxes.contains(&pos.add(&dir)) && !can_move_box_wide(grid, boxes, next, dir) {
+                return false;
             }
-            if boxes.contains(&(pos.0 + 1, pos.1).add(&dir)) {
-                if !can_move_box_wide(grid, boxes, (next.0 + 1, next.1), dir) {
-                    return false;
-                }
+            if boxes.contains(&(pos.0 + 1, pos.1).add(&dir))
+                && !can_move_box_wide(grid, boxes, (next.0 + 1, next.1), dir)
+            {
+                return false;
             }
         } else {
             let obs_check = pos.add(&dir.map(|d| if pos.0 & 1 == 0 { d * 2 } else { d }));
@@ -75,16 +73,16 @@ fn maybe_move_box_wide(
         }
         true
     }
-    fn move_box_wide(grid: &Grid<'_>, boxes: &mut HashSet<Point>, pos: Point, dir: Point) {
+    fn move_box_wide(boxes: &mut HashSet<Point>, pos: Point, dir: Point) {
         if !boxes.contains(&pos) {
             return;
         }
         if dir.1 != 0 {
-            move_box_wide(grid, boxes, (pos.0 - 1, pos.1).add(&dir), dir);
-            move_box_wide(grid, boxes, (pos.0, pos.1).add(&dir), dir);
-            move_box_wide(grid, boxes, (pos.0 + 1, pos.1).add(&dir), dir);
+            move_box_wide(boxes, (pos.0 - 1, pos.1).add(&dir), dir);
+            move_box_wide(boxes, (pos.0, pos.1).add(&dir), dir);
+            move_box_wide(boxes, (pos.0 + 1, pos.1).add(&dir), dir);
         } else {
-            move_box_wide(grid, boxes, pos.add(&dir.map(|d| d * 2)), dir);
+            move_box_wide(boxes, pos.add(&dir.map(|d| d * 2)), dir);
         }
         boxes.remove(&pos);
         boxes.insert(pos.add(&dir));
@@ -102,7 +100,7 @@ fn maybe_move_box_wide(
     };
 
     if can_move_box_wide(grid, boxes, real_pos, dir) {
-        move_box_wide(grid, boxes, real_pos, dir);
+        move_box_wide(boxes, real_pos, dir);
         true
     } else {
         false
@@ -130,9 +128,6 @@ fn part1(input: &str) -> Result<i64> {
 
     for dir in to_lines(moves).flat_map(|line| line.as_bytes().iter().copied().map(char_to_dir)) {
         let next_pos = pos.add(&dir);
-        if grid[next_pos] == b'#' {
-            continue;
-        }
         if move_box_narrow(&grid, &mut boxes, next_pos, dir) {
             pos = next_pos;
         }
@@ -163,9 +158,6 @@ fn part2(input: &str) -> Result<i64> {
 
     for dir in to_lines(moves).flat_map(|line| line.as_bytes().iter().copied().map(char_to_dir)) {
         let next_pos = pos.add(&dir);
-        if grid[(next_pos.0 / 2, next_pos.1)] == b'#' {
-            continue;
-        }
         if maybe_move_box_wide(&grid, &mut boxes, next_pos, dir) {
             pos = next_pos;
         }
