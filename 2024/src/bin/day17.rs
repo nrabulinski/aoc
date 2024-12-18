@@ -3,7 +3,6 @@ use std::fmt::Write;
 use aoc_lib::{
     aoc,
     color_eyre::eyre::{OptionExt, Result},
-    iter::IterExt,
     to_lines,
 };
 
@@ -186,7 +185,7 @@ fn find_ouroboros(program: &[u8]) -> i64 {
     {
         for a in 0..i64::MAX {
             let regs = [a, 0, 0];
-            if eval_ouroboros(regs, &program) {
+            if eval_ouroboros(regs, program) {
                 return a;
             }
         }
@@ -303,7 +302,7 @@ fn part2(input: &str) -> Result<i64> {
         .map(|s| s.as_bytes()[0])
         .collect();
 
-    return Ok(find_ouroboros(&program));
+    Ok(find_ouroboros(&program))
 }
 
 #[allow(dead_code)]

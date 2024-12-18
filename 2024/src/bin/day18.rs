@@ -4,7 +4,7 @@ use aoc_lib::{
     algo::dijkstra,
     aoc,
     color_eyre::eyre::Result,
-    grid::{Grid, Point},
+    grid::Point,
     to_lines,
 };
 
@@ -23,7 +23,7 @@ fn part1(input: &str) -> Result<i64> {
         .collect();
 
     let is_valid_pos =
-        |(x, y)| x >= 0 && x <= WIDTH && y >= 0 && y <= HEIGHT && !obstacles.contains(&(x, y));
+        |(x, y)| (0..=WIDTH).contains(&x) && (0..=HEIGHT).contains(&y) && !obstacles.contains(&(x, y));
 
     let (d, _) = dijkstra((0, 0), |&(x, y)| {
         let h = [-1, 1].into_iter().map(move |dx| (x + dx, y));
@@ -51,7 +51,7 @@ fn part2(input: &str) -> Result<String> {
         }
 
         let is_valid_pos =
-            |(x, y)| x >= 0 && x <= WIDTH && y >= 0 && y <= HEIGHT && !obstacles.contains(&(x, y));
+            |(x, y)| (0..=WIDTH).contains(&x) && (0..=HEIGHT).contains(&y) && !obstacles.contains(&(x, y));
 
         let (d, _) = dijkstra((0, 0), |&(x, y)| {
             let h = [-1, 1].into_iter().map(move |dx| (x + dx, y));
