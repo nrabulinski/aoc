@@ -8,24 +8,32 @@ use aoc_lib::{
 
 static INPUT: &str = include_str!("../../inputs/day19");
 
-fn find_available_patterns(patterns: &[&str], wants: &[&str]) -> usize {
-    fn is_possible(target: &str, patterns: &[&str]) -> bool {
+fn find_available_patterns<'a>(
+    patterns: &[&'a str],
+    wants: impl Iterator<Item = &'a str>,
+) -> usize {
+    fn is_possible<'a>(
+        target: &'a str,
+        patterns: &[&'a str],
+        cache: &mut HashMap<&'a str, bool>,
+    ) -> bool {
         if target.is_empty() {
-            return true;
+            true
+        } else if let Some(&res) = cache.get(&target) {
+            res
+        } else {
+            let res = patterns
+                .iter()
+                .filter(|&pat| target.starts_with(pat))
+                .any(|pat| is_possible(&target[pat.len()..], patterns, cache));
+            cache.insert(target, res);
+            res
         }
-
-        patterns.iter().copied().any(|pat| {
-            if !target.starts_with(pat) {
-                return false;
-            }
-            is_possible(&target[pat.len()..], patterns)
-        })
     }
 
+    let mut cache = HashMap::new();
     wants
-        .iter()
-        .copied()
-        .filter(|&want| is_possible(want, patterns))
+        .filter(|want| is_possible(want, patterns, &mut cache))
         .count()
 }
 
@@ -36,45 +44,44 @@ fn part1(input: &str) -> Result<usize> {
         .ok_or_eyre("invalid format")?;
 
     let patterns: Vec<_> = patterns.split(", ").collect();
-    let wants: Vec<_> = to_lines(wants).collect();
 
-    Ok(find_available_patterns(&patterns, &wants))
+    Ok(find_available_patterns(&patterns, to_lines(wants)))
 }
 
-fn find_all_available_patterns(patterns: &[&str], wants: &[&str]) -> usize {
+fn find_all_available_patterns<'a>(
+    patterns: &[&'a str],
+    wants: impl Iterator<Item = &'a str>,
+) -> usize {
     fn inner<'a>(
         want: &'a str,
         patterns: &[&'a str],
         cache: &mut HashMap<&'a str, usize>,
     ) -> usize {
         if want.is_empty() {
-            return 1;
+            1
+        } else if let Some(&res) = cache.get(&want) {
+            res
+        } else {
+            let res = patterns
+                .iter()
+                .map(|pat| {
+                    // somehow this is faster than doing filter + map or filter_map
+                    // also, using strip_prefix is slower
+                    #[allow(clippy::manual_strip)]
+                    if want.starts_with(pat) {
+                        inner(&want[pat.len()..], patterns, cache)
+                    } else {
+                        0
+                    }
+                })
+                .sum();
+            cache.insert(want, res);
+            res
         }
-
-        if let Some(&res) = cache.get(&want) {
-            return res;
-        }
-        let res = patterns
-            .iter()
-            .copied()
-            .map(|pat| {
-                if !want.starts_with(pat) {
-                    return 0;
-                }
-
-                inner(&want[pat.len()..], patterns, cache)
-            })
-            .sum();
-        cache.insert(want, res);
-        res
     }
 
     let mut cache = HashMap::new();
-    wants
-        .iter()
-        .copied()
-        .map(|want| inner(want, patterns, &mut cache))
-        .sum()
+    wants.map(|want| inner(want, patterns, &mut cache)).sum()
 }
 
 fn part2(input: &str) -> Result<usize> {
@@ -84,9 +91,8 @@ fn part2(input: &str) -> Result<usize> {
         .ok_or_eyre("invalid format")?;
 
     let patterns: Vec<_> = patterns.split(", ").collect();
-    let wants: Vec<_> = to_lines(wants).collect();
 
-    Ok(find_all_available_patterns(&patterns, &wants))
+    Ok(find_all_available_patterns(&patterns, to_lines(wants)))
 }
 
 #[allow(dead_code)]
