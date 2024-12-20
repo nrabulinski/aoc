@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 aoc-lib = { git = "https://github.com/nrabulinski/aoc-utils.git" }
+rayon = "1.10.0"
