@@ -11,6 +11,10 @@ enum Action {
 }
 
 fn code_char_keypad_pos(c: u8) -> Point {
+    // 7 8 9
+    // 4 5 6
+    // 1 2 3
+    //   0 A
     match c {
         b'7'..=b'9' => ((c - b'7').into(), 3),
         b'4'..=b'6' => ((c - b'4').into(), 2),
@@ -22,6 +26,8 @@ fn code_char_keypad_pos(c: u8) -> Point {
 }
 
 fn dir_keypad_pos(dir: Point) -> Point {
+    //   ^ A
+    // < v >
     match dir {
         (0, 0) => (2, 1), // A button,
         (-1, 0) => (0, 0),
@@ -32,7 +38,11 @@ fn dir_keypad_pos(dir: Point) -> Point {
     }
 }
 
-fn first(dirs: &[Action], layers: usize, cache: &mut HashMap<(Vec<Action>, usize), i64>) -> i64 {
+fn robot_movements(
+    dirs: &[Action],
+    layers: usize,
+    cache: &mut HashMap<(Vec<Action>, usize), i64>,
+) -> i64 {
     dirs.iter()
         .scan(dir_keypad_pos((0, 0)), |pos, &dir| {
             let mut actions = Vec::new();
@@ -40,17 +50,15 @@ fn first(dirs: &[Action], layers: usize, cache: &mut HashMap<(Vec<Action>, usize
                 let d = (to_reach.0 - pos.0, to_reach.1 - pos.1);
                 if pos.0 == 0 && to_reach.1 == 1 {
                     // prioritize going right over up if we were to hover over the gap
-                    assert_ne!(d.0, 0);
-                    assert_ne!(d.1, 0);
                     actions.push(Action::Move((d.0, 0)));
                     actions.push(Action::Move((0, d.1)));
                 } else if pos.1 == 1 && to_reach.0 == 0 {
                     // prioritize going down over left if we were to hover over the gap
-                    assert_ne!(d.0, 0);
-                    assert_ne!(d.1, 0);
                     actions.push(Action::Move((0, d.1)));
                     actions.push(Action::Move((d.0, 0)));
                 } else {
+                    // otherwise just set our aciton to the direction we want to move in,
+                    // and let our parent figure out which way to move us first
                     if d != (0, 0) {
                         actions.push(Action::Move(d));
                     }
@@ -58,6 +66,7 @@ fn first(dirs: &[Action], layers: usize, cache: &mut HashMap<(Vec<Action>, usize
                 actions.push(Action::Press(times_to_press));
                 *pos = to_reach;
             };
+
             match dir {
                 Action::Press(times) => {
                     let to_reach = dir_keypad_pos((0, 0));
@@ -82,7 +91,8 @@ fn first(dirs: &[Action], layers: usize, cache: &mut HashMap<(Vec<Action>, usize
                     }
                     .map(|to_reach| (to_reach, dir.1.abs()));
 
-                    // let ops = [to_reach_hor, to_reach_ver];
+                    // all of this to just either move horizontally or vertically first,
+                    // depending which key is closer.
                     let ops = if to_reach_hor.is_some_and(|(hor, _)| {
                         to_reach_ver.is_none_or(|(ver, _)| {
                             let d1 = (hor.0 - pos.0, hor.1 - pos.1);
@@ -100,13 +110,16 @@ fn first(dirs: &[Action], layers: usize, cache: &mut HashMap<(Vec<Action>, usize
                     }
                 }
             }
+            // ****************************************
+            // the x here is only so that I can can avoid cloning `actions`
             let x = (actions, layers);
             if let Some(&res) = cache.get(&x) {
                 return Some(res);
             }
             let (actions, _) = x;
+            // ****************************************
             let res = if layers > 0 {
-                first(&actions, layers - 1, cache)
+                robot_movements(&actions, layers - 1, cache)
             } else {
                 actions.iter().fold(0, |acc, &curr| {
                     acc + match curr {
@@ -153,7 +166,7 @@ fn find_complexity(
             }
             res.push(Action::Press(1));
             *pos = to_reach;
-            Some(first(&res, layers - 1, cache))
+            Some(robot_movements(&res, layers - 1, cache))
         })
         .sum::<i64>()
         * val
