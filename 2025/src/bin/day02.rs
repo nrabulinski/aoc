@@ -12,18 +12,20 @@ fn part1(input: &str) -> Result<i64> {
             start..=end
         })
         .filter(|&id| {
-            let digits = id.ilog10();
+            let digits = id.ilog10() + 1;
             // leading zeros don't count,
             // so there can't be any invalid
             // ids with odd number of digits
-            if digits % 2 == 0 {
+            if digits & 1 == 1 {
                 return false;
             }
-            let midpoint = (digits + 2) / 2;
-            let mask = 10i64.pow(midpoint);
-            let front = id / mask;
-            let back = id % mask;
-            front == back
+
+            // We're checking if a number has a form of xyzxyz
+            // meaning, we can just check if it's divisible by 1001.
+            // Similarly, for abcdabcd, we need to check divisibility
+            // by 10001, and so on.
+            let d = 10i64.pow(digits / 2) + 1;
+            id % d == 0
         })
         .sum();
     Ok(result)
@@ -39,13 +41,27 @@ fn part2(input: &str) -> Result<i64> {
             start..=end
         })
         .filter(|&id| {
-            let id = id.to_string();
-            let mut divisors = (1..=id.len() / 2).filter(|len| id.len() % len == 0);
-            divisors.any(|sz| {
-                let mut i = id.as_bytes().chunks(sz);
-                let fst = i.next().unwrap();
-                i.all(|curr| curr == fst)
-            })
+            let digits = id.ilog10() + 1;
+
+            // The general approach is:
+            // For any number x with digits n, find the divisors of n,
+            // and for each of them calculate the "mask",
+            // which will then be checked whether it can divide x.
+            //
+            // E.g. for an 8 digit number abcdefgh, we need to check whether:
+            // a = b = c = d = e = f = g = h
+            // ab = cd = ef = gh
+            // abcd = efgh
+            //
+            // We can easily notice, that this will be true if one of those is a divisor of x:
+            // 11111111, 1010101, 10001.
+            // And those divisors represent 1, 2, and 4 - the divisors of 8.
+            // The amount of 1s is n / divisor, and the "gap" between each 1 (or the size of each "chunk")
+            // is the divisor itself.
+            (1..=digits / 2)
+                .filter(|&n| digits % n == 0)
+                .map(|n| (0..digits / n).map(|i| 10i64.pow(i * n)).sum::<i64>())
+                .any(|d| id % d == 0)
         })
         .sum();
     Ok(result)
