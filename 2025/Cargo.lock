@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "aoc-lib"
 version = "0.1.0"
-source = "git+https://github.com/nrabulinski/aoc-utils.git#c1228cd3550e4fc057a99f78b1c6ee1eeeed126b"
+source = "git+https://github.com/nrabulinski/aoc-utils.git#fd8f000084b989cc563c7e173ab8af6fe015c4df"
 dependencies = [
  "color-eyre",
  "rangemap",
@@ -121,9 +121,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.177"
+version = "0.2.178"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2874a2af47a2325c2001a6e6fad9b16a53b802102b528163885171cf92b15976"
+checksum = "37c93d8daa9d8a012fd8ab92f088405fb202ea0b6ab73ee2482ae66af4f42091"
 
 [[package]]
 name = "memchr"
