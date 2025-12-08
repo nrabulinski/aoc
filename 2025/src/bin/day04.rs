@@ -23,7 +23,7 @@ fn part1(input: &str) -> Result<usize> {
 fn part2(input: &str) -> Result<usize> {
     let result = std::iter::repeat(())
         .scan(input.trim().to_string(), |input, _| {
-            let grid = Grid::for_str(&input).unwrap();
+            let grid = Grid::for_str(input).unwrap();
             let to_remove: Vec<_> = reachable(&grid)
                 .map(|pos| grid.pos_to_idx(pos).unwrap())
                 .collect();

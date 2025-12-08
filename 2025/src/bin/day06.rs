@@ -42,7 +42,8 @@ fn do_one_column(input: &str, total_width: usize, x: usize) -> i64 {
         .iter()
         .skip(x)
         .step_by(total_width)
-        .filter_map(|b| b.is_ascii_whitespace().not().then(|| (b - b'0') as i64))
+        .filter(|&b| b.is_ascii_whitespace().not())
+        .map(|b| (b - b'0') as i64)
         .reduce(|acc, curr| acc * 10 + curr)
         .unwrap()
 }
@@ -74,7 +75,6 @@ fn part2(input: &str) -> Result<i64> {
         })
         .collect();
     let operators = operators.iter().enumerate().map(|(idx, &(start, op))| {
-        let start = start;
         let end = operators
             .get(idx + 1)
             .map_or_else(|| width - 1, |&(s, _)| s - 1);
